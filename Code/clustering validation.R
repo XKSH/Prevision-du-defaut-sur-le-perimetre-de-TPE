@@ -1,0 +1,2 @@
+#Clustering validation
+#Erreur topologique
