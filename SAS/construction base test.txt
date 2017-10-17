@@ -1,0 +1,43 @@
+rsubmit;
+data test;
+set Pertbp.Bfbmapmddde_mordft 
+(obs=500 keep=ID_DOS_DFT COD_SEG_CLI COD_PAYS_IMMA COD_CAT_JUR_N3 COD_PAYS_RISQ MNT_CAR_CA COD_POST_CLI TOP_ENTREP_CREAT MNT_STK_EPARGF_CLI MNT_STK_EPARGM_CLI MNT_TOT_ACT_SOC MNT_CA_SOCIAL MNT_CA_CONSO);
+run;
+endrsubmit;
+
+proc sql;
+create table test1 as 
+select a.*,b.CLASS_PD_N3,b.COD_MODELE_PD
+from test  as a
+left join  Pertbp.Bfbmapmddde_nottie as b
+on a.id_dos_dft=b.id_dos_dft 
+order by a.id_dos_dft;
+quit;
+
+
+rsubmit;
+proc sql;
+create table test1 as 
+select a.*,b.CLASS_PD_N3,b.COD_MODELE_PD
+from test  as a
+left join  Pertbp.Bfbmapmddde_nottie as b
+on a.id_dos_dft=b.id_dos_dft 
+order by a.id_dos_dft;
+quit;
+endrsubmit;
+
+rsubmit;
+*libname db db2;
+proc download data=work.test1 
+      out=mytest;
+run;
+endrsubmit;
+
+
+
+
+rsubmit;
+libname kxu "/Equipe_SAS/DRG/VALIDATION/KXU";
+endrsubmit;
+
+libname kxu slibref=kxu server=srv;

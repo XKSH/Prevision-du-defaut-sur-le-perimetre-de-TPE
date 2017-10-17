@@ -1,0 +1,81 @@
+*Liste de tableaux  de la bibliotheque Pertbp
+proc sql noprint;
+    create table mytable as
+    select libname,memname from sashelp.vtable
+    where upcase(libname)="PERTBP";
+quit;
+data _null_;
+  set mytable nobs=nobs;
+  call symput("ntab",nobs);
+  stop;
+run;
+%put &ntab;
+
+/***Nom des tableaux*/
+proc sql noprint;
+select cats(libname,".",memname)
+into :mname1-:mname%left(&ntab)
+from mytable;
+quit;
+/**equivalent*/
+data _null_;
+set mytable;
+suffix=put(_n_,5.);
+call symput(cats('Name',suffix), memname);
+run;
+
+/*Liste de variable*/
+
+proc sql;
+create table vlist as
+select name as variable
+,memname as table_name,type as type,libname as lib_name
+from dictionary.columns
+where upcase(libname) = 'PERTBP' | upcase(libname) = 'RETABP'
+order by lib_name,table_name;
+quit;
+
+proc sort data=vlist;
+by type variable;
+run;
+/*Liste de variables uniques*/
+proc sql noprint;
+create table ulist as 
+select distinct variable as variable,type
+from vlist
+order by type;
+quit;
+
+proc sort data=vlist;
+by type variable;
+run;
+
+proc sql noprint;
+create table ulist as 
+select distinct variable as variable,type
+from vlist
+order by type;
+quit;
+
+proc freq data=vlist noprint;
+tables variable/ out=tmp; 
+run;
+/*Liste de variables uniques avec l'effectif*/
+proc sql noprint;
+create table uclist as 
+select a.*,b.count
+from ulist  as a
+full join  tmp as b
+on a.variable=b.variable 
+order by a.type,b.count;
+quit;
+
+/****nom de tabeaux pour la teste**/
+proc sql noprint;
+select cats("t",scan(memname,-1,'_'))/*t:teste n:nom*/
+into :Name1-:Name%left(&ntab)
+from mytable;
+quit;
+%put &Name1;
+
+

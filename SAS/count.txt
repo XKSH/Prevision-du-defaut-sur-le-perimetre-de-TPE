@@ -1,0 +1,15 @@
+data _null_;
+dsid = open('Retabp.Pro_bt_lgd', 'is');
+ do while (fetch(dsid, 'noset') = 0);
+ i + 1;
+ end;
+ put i=;
+ rc = close(dsid);
+ stop;
+ run;
+/*same speed*/
+data _null_;
+call symputx('nd',_N_-1);
+set Retabp.Pro_bt_lgd;
+run;
+%put nD = &nd. ;

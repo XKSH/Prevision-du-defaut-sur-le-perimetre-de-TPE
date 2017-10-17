@@ -1,0 +1,80 @@
+*RSUBMIT;
+data test;
+set Pertbp.Bfbmapmddde_mordft
+(obs=500 keep=ID_DOS_DFT COD_SEG_CLI COD_PAYS_IMMA COD_CAT_JUR_N3 COD_PAYS_RISQ MNT_CAR_CA COD_POST_CLI TOP_ENTREP_CREAT MNT_STK_EPARGF_CLI MNT_STK_EPARGM_CLI MNT_TOT_ACT_SOC MNT_CA_SOCIAL MNT_CA_CONSO);
+run;
+*endrsubmit ;
+
+data test1;
+set Pertbp.Bfbmapmddde_phydft
+(obs=500 keep=ID_DOS_DFT  COD_SEG_CLI  COD_PAYS_RESID_CLI COD_PCS_N3_BFBP COD_SITU_FAM NBR_CAR_ENF_CHRG
+DAT_NAISS MNT_CAR_CHRG_CLI_AA MNT_CAR_REVENU_CLI_AA COD_POST_CLI MNT_STK_EPARGF_CLI MNT_STK_EPARGM_CLI);
+run;
+/*
+rsubmit;
+*libname db db2;
+proc download data=work.test 
+      out=mytest;
+run;
+endrsubmit;
+*/
+
+proc sql;
+create table test as select a.*,b.CLASS_PD_N3,b.COD_MODELE_PD
+from test1  as a
+left join  Pertbp.Bfbmapmddde_nottie as b
+on a.id_dos_dft=b.id_dos_dft 
+order by a.id_dos_dft;
+quit;
+/*Sort*/
+rsubmit;
+proc sort data= Pertbp.Bfbmapmddde_mordft out=work.mor;
+by id_dos_dft;
+run;
+endrsubmit;
+/**/
+%macro testdata(ndat=,dats=,kvar=);
+data &ndat;
+set &dats
+(keep=&kvar);
+run;
+%mend testdata;
+/*Perte*/
+%testdata(ndat=&Name2,dats=&mname2,kvar=ID_DOS_DFT periode MNT_CESSION_CREANCE)
+%testdata(ndat=&Name3,dats=&mname3,kvar=ID_DOS_DFT periode MNT_FLX_FRAIS_EXT)
+%testdata(ndat=&Name4,dats=&mname4,kvar=ID_DOS_DFT periode COD_PRDT PERIODICITE_REMB_INTERET PERIODICITE_REMB_CAPITAL TOP_LBO TOP_SYNDIC_NATIXIS TOP_SENIOR_CTRT MNT_STK_AUT_NON_CONF
+MNT_STK_AUT_CONF_CTRT NBR_INI_COEMP TAU_CONTRAT TAU_EFFEC MNT_INI_CTRT TOP_CTRT_RESTRUC)
+%testdata(ndat=&Name5,dats=&mname5,kvar=ID_DOS_DFT PERIODE  MNT_MAX_GARANTI TAU_COUV_GAR_CTRT TAU_SEUIL_COUVERTURE_INITIAL)
+%testdata(ndat=&Name6,dats=&mname6,kvar=ID_DOS_DFT PERIODE COD_SORT_DFT)
+%testdata(ndat=&Name8,dats=&mname8,kvar=ID_DOS_DFT PERIODE COD_EVT COD_BQ_IREF COD_BQ_DEDE)
+%testdata(ndat=&Name9,dats=&mname9,kvar=ID_DOS_DFT PERIODE MNT_INI_GAR NUM_RG_GAR)
+%testdata(ndat=&Name10,dats=&mname10,kvar=ID_DOS_DFT PERIODE TOP_RET_TITRIS MNT_STK_SLD MNT_STK_APL_CAUT_PRD  MNT_STK_AUT_NON_CONF
+MNT_STK_ENGT_BRUT_HBIL MNT_STK_ENGT_BRUT_BIL MNT_STK_IMP MNT_STK_CREANC_RATT COD_TRTM_COMPTA_TITRIS  MNT_STK_CREANC LGD COD_MODELE_LGD)
+
+%testdata(ndat=&Name12,dats=&mname12,kvar=ID_DOS_DFT PERIODE COD_POST_CLI MNT_CAR_CA COD_PAYS_IMMA COD_ACT COD_PAYS_RISQ COD_CAT_JUR_N3 TOP_ENTREP_CREAT MNT_TOT_ACT_SOC MNT_CA_CONSO MNT_STK_EPARGM_CLI MNT_CA_SOCIAL MNT_STK_EPARGF_CLI)
+
+
+%testdata(ndat=&Name15,dats=&mname15,kvar=ID_DOS_DFT PERIODE COD_SEG_CLI NBR_CAR_ENF_CHRG MNT_CAR_REVENU_CLI_AA MNT_CAR_CHRG_CLI_AA  COD_POST_CLI COD_PAYS_RESID_CLI COD_SITU_FAM COD_PCS_N3_BFBP MNT_STK_EPARGM_CLI MNT_STK_EPARGF_CLI)
+
+%testdata(ndat=&Name13,dats=&mname13,kvar=ID_DOS_DFT PERIODE CLASS_PD_N3 COD_MODELE_PD)
+%testdata(ndat=&Name14,dats=&mname14,kvar=COD_PRDT PERIODE COD_BQ MNT_FLX_PCEC_PERT)
+%testdata(ndat=&Name16,dats=&mname16,kvar=ID_DOS_DFT PERIODE MNT_FLX_RBSMT_CLI MNT_FLX_FRAIS_EXT)
+%testdata(ndat=&Name17,dats=&mname17,kvar=ID_DOS_DFT PERIODE TOP_SS_TRAITANCE MNT_FLX_TIRAG_SUP MNT_FLX_INTERET_RETARD MNT_FLX_TOT_PERT MNT_FLX_TOT_FRAIS MNT_FLX_RECUPERATIONS MNT_STK_ENGT_BRUT_HBIL MNT_STK_ENGT_BRUT_BIL TAU_CONTRAT MNT_STK_VR
+MNT_STK_ENCRS_FINANC MNT_STK_DBT_DIFF MNT_FLX_PROV TAU_EFFEC MNT_STK_PROV)
+%testdata(ndat=&Name21,dats=&mname21,kvar=ID_DOS_DFT PERIODE LIB_CLI_NOM COD_AGT_ECO)
+%testdata(ndat=&Name22,dats=&mname22,kvar=ID_DOS_DFT PERIODE TOP_VAL_GAR_EXPERT MNT_STK_GAR_VAL)
+
+/***export data*/
+proc export data=&name16
+outfile="C:\Users\XU\Desktop\&name16..csv"
+dbms=csv replace;
+run;
+
+
+proc sql noprint;
+create table tgar as select a.*, b.MNT_FLX_RBSMT_CLI
+from tctrgar as a 
+left join  trecgar as b
+on a.id_dos_dft=b.id_dos_dft and a.NUM_GAR=b.NUM_GAR and a.periode=b.periode 
+order by a.id_dos_dft;
+quit;
