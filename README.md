@@ -8,3 +8,4 @@ This repository is my work on the VSB data using the ideas of supervised, semi s
 ![](https://github.com/XKSH/Prevision-du-defaut-sur-le-perimetre-de-TPE/blob/master/Result/def.jpeg)
 ![](https://github.com/XKSH/Prevision-du-defaut-sur-le-perimetre-de-TPE/blob/master/Result/ssom%20confusion.jpeg)
 ![](https://github.com/XKSH/Prevision-du-defaut-sur-le-perimetre-de-TPE/blob/master/Result/cross-mh-glmtes.jpeg)
+![](https://github.com/XKSH/Prevision-du-defaut-sur-le-perimetre-de-TPE/blob/master/Result/totalbase.jpeg)
