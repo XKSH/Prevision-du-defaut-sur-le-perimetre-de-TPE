@@ -1,0 +1,354 @@
+%let SRV=10.100.100.154 10801;  
+options comamid=tcp remote=SRV ;
+filename rlink "O:\DRG\DRG-9.3.0-Validation-commun\pplsas02_9.4.txt" ;
+signon;
+
+rsubmit ;
+%LET user = KXU;
+%LET pwd = nouveau;
+endrsubmit ;
+
+/*v3ssEILp*/
+
+/* Chemin des programmes SAS */
+%let CHEMIN=O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code;
+
+/* Connexion & Compilation des macros */
+%include "&CHEMIN.\01 - Construction des cohortes\Modélisation\11-Connexion.sas";
+%include "O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code\02 - Modelisation\MACRO_FILTRES_MODELISATION.sas";
+
+/* Transformation des macros variables locales en global serveur*/
+%recup_macro_variables();
+
+
+rsubmit;  
+	libname RETABP db2 user="&user" pwd="&pwd" datasrc="RISQUES" schema=RETA ;
+	libname RETACE db2 user="&user" pwd="&pwd" datasrc="RISQUES" schema=RETACE ;
+endrsubmit;
+libname RETABP SLIBREF=RETABP SERVER=srv;
+libname RETACE SLIBREF=RETACE SERVER=srv;
+
+rsubmit; 
+    options msglevel=I;
+
+
+	/*arborescence finale*/
+	libname PRO "/Equipe_SAS/DRG/VALIDATION/KXU/Extraction données Modélisation/PRO";
+
+	libname TABLEREF "/Equipe_SAS/DRG/VALIDATION/KXU/Extraction données Modélisation/TABLES_REF";
+	libname COHO_NIE "/Equipe_SAS/DRG/VALIDATION/KXU/Extraction données Modélisation/COHORTES_NIE_201510";
+    libname CORP_NEW "/Equipe_SAS/DRG/VALIDATION/KXU/Extraction données Modélisation/BASES_CORP_FINAL";
+    libname PRO_NEW "/Equipe_SAS/DRG/VALIDATION/KXU/Extraction données Modélisation/BASES_PRO_FINAL";	
+    libname MOD "/Equipe_SAS/DRG/VALIDATION/KXU/Extraction données Modélisation";
+endrsubmit;
+
+	libname PRO SLIBREF=PRO SERVER=srv;
+	libname TABLEREF SLIBREF=TABLEREF SERVER=srv;
+	libname COHO_NIE SLIBREF=COHO_NIE SERVER=srv;
+	libname PRO_NEW SLIBREF=PRO_NEW SERVER=srv;
+	libname CORP_NEW SLIBREF=CORP_NEW SERVER=srv;
+	libname SWORK SLIBREF=WORK SERVER=srv;
+    libname MOD SLIBREF=MOD SERVER=srv;
+/*déjà fait*/
+rsubmit;
+%ENGT_SIRCO(LIB_OUT=TABLEREF, COHORTE=201506);
+endrsubmit;
+
+****************************
+CREATION DES BASES CORPORATE /*déjà fait*/
+****************************; 
+rsubmit;
+%CREATION_BASE(TAB_IN=COHO_NIE.Coh201206_complet_avecdef,COHORTE=201206);
+endrsubmit;
+
+rsubmit;
+%CREATION_BASE(TAB_IN=COHO_NIE.Coh201212_complet_avecdef,COHORTE=201212);
+endrsubmit;
+
+
+rsubmit;
+options obs = max ;
+%CREATION_BASE(TAB_IN=COHO_NIE.Coh201306_complet_avecdef,COHORTE=201306);
+endrsubmit;
+
+
+rsubmit;
+%CREATION_BASE(TAB_IN=COHO_NIE.Coh201312_complet_avecdef,COHORTE=201312);
+endrsubmit;
+
+
+rsubmit;
+%CREATION_BASE(TAB_IN=COHO_NIE.Coh201406_complet_avecdef,COHORTE=201406);
+endrsubmit;
+
+*****************************
+CREATION DES BASES RETAIL PRO /*(déjà fait)*/
+*****************************;
+/* EXTRACTION DES COHORTES RETAIL PRO */
+%include "O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code\01 - Construction des cohortes\Modélisation\Cohortes PRO\01 - EXTRACTION_COHORTES_RETAIL_PRO.sas";
+%include "O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code\01 - Construction des cohortes\Modélisation\Cohortes PRO\02 - Recuperation_CA_REPR_Pro.sas";
+
+/* PRIORISATION DES CA RETAIL PRO */
+%include "O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code\01 - Construction des cohortes\Modélisation\Cohortes PRO\03 - Priorisation_CA_PRO.sas";
+
+/* APPLICATION DES FILTRES RETAIL PRO */
+%include "O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code\01 - Construction des cohortes\Modélisation\Cohortes PRO\04 - Application_filtres.sas";
+
+/* Neutralisation des da3 de moins de 57 jours afin d homogeneiser le defaut avec le corp */
+%include "O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code\01 - Construction des cohortes\Modélisation\Cohortes PRO\05 - Ajustement_DEF_DA57_new.sas";
+
+**************************************************************
+CREATION BASE PRO/CORP AU NIVEAU SIREN + BASE PRO NIVEAU TIERS :/*(déjà fait)*/
+**************************************************************;
+rsubmit;
+%CREATION_BASE_PRO_CORP(TAB_IN_PRO=PRO_NEW.Cohortes_ratios_201206_filtre_da,TAB_IN_CORP=CORP_NEW.Coho201206, TAB_OUT=PRO_NEW.BASE_CORP_PRO_201206, COHORTE=201206);
+endrsubmit;
+
+rsubmit;
+%CREATION_BASE_PRO_CORP(TAB_IN_PRO=PRO_NEW.Cohortes_ratios_201212_filtre_da,TAB_IN_CORP=CORP_NEW.Coho201212, TAB_OUT=PRO_NEW.BASE_CORP_PRO_201212, COHORTE=201212);
+endrsubmit;
+
+rsubmit;
+%CREATION_BASE_PRO_CORP(TAB_IN_PRO=PRO_NEW.Cohortes_ratios_201306_filtre_da,TAB_IN_CORP=CORP_NEW.Coho201306, TAB_OUT=PRO_NEW.BASE_CORP_PRO_201306, COHORTE=201306);
+endrsubmit;
+
+rsubmit;
+%CREATION_BASE_PRO_CORP(TAB_IN_PRO=PRO_NEW.Cohortes_ratios_201312_filtre_da,TAB_IN_CORP=CORP_NEW.Coho201312, TAB_OUT=PRO_NEW.BASE_CORP_PRO_201312, COHORTE=201312);
+endrsubmit;
+
+rsubmit;
+%CREATION_BASE_PRO_CORP(TAB_IN_PRO=PRO_NEW.Cohortes_ratios_201406_filtre_da,TAB_IN_CORP=CORP_NEW.Coho201406, TAB_OUT=PRO_NEW.BASE_CORP_PRO_201406, COHORTE=201406);
+endrsubmit;
+
+************************************************************
+CREATION BASE PRO/CORP POUR LA MODELISATION AU NIVEAU SIREN  /*déjà fait*/
+************************************************************;
+
+rsubmit;
+%CREATION_BASE_PRO_CORP_MOD(TAB_OUT=_201206, COHORTE=201206);
+endrsubmit;
+
+rsubmit;
+%CREATION_BASE_PRO_CORP_MOD(TAB_OUT=_201212, COHORTE=201212);
+endrsubmit;
+
+
+
+rsubmit;
+%CREATION_BASE_PRO_CORP_MOD(TAB_OUT=_201306, COHORTE=201306);
+endrsubmit;
+
+
+rsubmit;
+%CREATION_BASE_PRO_CORP_MOD(TAB_OUT=_201312, COHORTE=201312);
+endrsubmit;
+
+
+rsubmit;
+%CREATION_BASE_PRO_CORP_MOD(TAB_OUT=_201406, COHORTE=201406);
+endrsubmit;
+
+ 
+
+******************************************************
+CREATION BASE PRO POUR LA MODELISATION AU NIVEAU TIERS: /*déjà fait?*/
+******************************************************;
+rsubmit;
+%CREATION_BASE_PRO_TIERS_MOD(COHORTE=201206);
+endrsubmit;
+
+rsubmit;
+%CREATION_BASE_PRO_TIERS_MOD(COHORTE=201212);
+endrsubmit;
+
+ 
+rsubmit;
+%CREATION_BASE_PRO_TIERS_MOD(COHORTE=201306); 
+endrsubmit;
+
+
+rsubmit;
+%CREATION_BASE_PRO_TIERS_MOD(COHORTE=201312); 
+endrsubmit;
+
+
+rsubmit;
+%CREATION_BASE_PRO_TIERS_MOD(COHORTE=201406);
+endrsubmit;
+
+ 
+********************************************************
+                APPLICATION DES FILTRES                  /*déjà fait?*/
+********************************************************;
+/* Aplication des filtres suivants :
+    - segment bas 
+    - MOTIF : hors défauts en début de cohorte, têtes conso sans bilan conso et sortis du périmètre 1 an après sans tombée en défaut
+    - hors EI
+    - hors SIREN ayant au moins un tiers CCOOP ou BRED */
+rsubmit;
+%FILTRES_MODELISATION (cohorte=201206);
+endrsubmit;
+
+
+rsubmit;
+%FILTRES_MODELISATION (cohorte=201212);
+endrsubmit;
+proc printto; run;
+
+Proc printto LOG="&CHEMIN.\LOG\07_CONSTRUCTION_BASES_MODELISATION_201306_&DATE._&HEURE..TXT" new; run; 
+rsubmit;
+%FILTRES_MODELISATION (cohorte=201306);
+endrsubmit;
+proc printto; run;
+
+rsubmit;
+%FILTRES_MODELISATION (cohorte=201312);
+endrsubmit;
+proc printto; run;
+
+rsubmit;
+%FILTRES_MODELISATION (cohorte=201206);
+%FILTRES_MODELISATION (cohorte=201212);
+%FILTRES_MODELISATION (cohorte=201306);
+%FILTRES_MODELISATION (cohorte=201312);
+%FILTRES_MODELISATION (cohorte=201406);
+%FILTRES_MODELISATION (cohorte=201412);/*utilisation des bases Calibrage pour avoir le défaut (TOP_dft_auto_pro_crop)*/
+%FILTRES_MODELISATION (cohorte=201506);/*A cette date : absence de la variable TOP_dft_auto_pro_crop pour les défauts */
+endrsubmit;
+
+
+********************************************************
+        CONCATENATION DES COHORTES POUR CREER LES 
+                    BASES PRO-CORP ET CORP 
+********************************************************;
+
+rsubmit;
+data MOD.BASE_CORP_PRO_MOD_HORS_FILTRE ; set Pro_new.Base_corp_pro_201206 Pro_new.Base_corp_pro_201212 Pro_new.Base_corp_pro_201306 Pro_new.Base_corp_pro_201312 ; run;
+endrsubmit;
+
+
+rsubmit;
+data MOD.BASE_CORP_MOD_HORS_FILTRE ; set Pro_new.Base_corp_pro_201206 (WHERE=(PRO_CORP="CORP")) Pro_new.Base_corp_pro_201212 (WHERE=(PRO_CORP="CORP")) 
+                                         Pro_new.Base_corp_pro_201306 (WHERE=(PRO_CORP="CORP")) Pro_new.Base_corp_pro_201312 (WHERE=(PRO_CORP="CORP")) ; run;
+endrsubmit;
+
+
+rsubmit;
+data MOD.BASE_CORP_MOD ; set Base_corp_pro_201206_filtre (WHERE=(PRO_CORP="CORP")) Base_corp_pro_201212_filtre (WHERE=(PRO_CORP="CORP"))
+                             Base_corp_pro_201306_filtre (WHERE=(PRO_CORP="CORP")) Base_corp_pro_201312_filtre (WHERE=(PRO_CORP="CORP")) ; run;
+endrsubmit;
+
+********************************************************
+        ECHANTILLONNAGE BASES DE MODELISATION (avec les données dans modélisation)
+********************************************************;
+/* Deux échantillonnages successifs :
+ - Echantillonnage 1/nb_cohorte de chaque cohorte, niveau SIREN 
+ - Echantillonnage Construction (2/3) / Test (1/3) */
+rsubmit;
+    libname MOD "/Equipe_SAS/DRG/VALIDATION/KXU/Modélisation";
+endrsubmit;
+libname MOD SLIBREF=MOD SERVER=srv;
+
+
+%let CHEMIN1=O:\DRG\DRG-9.3.3-VAL-MIV-Corporate\2016\PD\TPE\Validation\Analyses\Hajar\Code;
+
+/* Connexion & Compilation des macros */
+%include "&CHEMIN1.\02 - Modelisation\MACRO_Echantillonnage_SIREN.sas";
+
+rsubmit;
+%echantillon_SIREN(entree=MOD.BASE_CORP_PRO_MOD, cohortes=cohorte, sortie=MOD.BASE_CORP_PRO_MOD_ECH, echantillon=ECH_BASE_CORP_PRO_MOD, nb_coh=4, ptf='PRO-CORP');
+endrsubmit;
+
+rsubmit;
+options mprint;
+%echantillon_SIREN(entree=MOD.BASE_CORP_MOD, cohortes=cohorte, sortie=MOD.BASE_CORP_MOD_ECH, echantillon=ECH_BASE_CORP_MOD, nb_coh=4, ptf='CORP');
+endrsubmit;
+
+
+/*statistique des clients défaillants*/
+proc freq data=MOD.BASE_CORP_MOD ; tables PRO_CORP*top_dft_auto_pro_corp / out=def1 outpct noprint ; run ;
+data def ; set def ; if top_dft_auto_pro_corp = 0 then delete ; rename pct_row=tx_def ;
+/*ch
+proc sql; 
+create table cas_def as select ID_SIREN from MOD.BASE_CORP_PRO_MOD where top_dft_auto_pro_corp=1 ;
+quit ;
+
+
+drop top_dft_auto_pro_corp count percent pct_col ; run ;
+proc freq data=&entree. ; tables PRO_CORP*cohorte / out=effectif (drop=percent) noprint ; run ;
+proc sql ;
+	create table &echantillon. as select
+	a.* , b.*, round(tx_def*count/&nb_coh./100) as nb_def, round((100-tx_def)*count/&nb_coh./100) as nb_sain
+	from effectif as a left join def as b
+	on a.PRO_CORP = b.PRO_CORP ;
+quit ;
+
+proc delete data=&sortie.;run;
+
+		%let cohorte=%scan(&cohortes,1) ;
+			proc sql noprint;select nb_def into : nb_def_corp from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'CORP' ;
+				select nb_sain into : nb_sain_corp from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'CORP' ;
+			quit ;
+			%if &ptf.='PRO-CORP' %then %do ;
+			proc sql noprint;select nb_def into : nb_def_pro from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'PRO' ;
+				select nb_sain into : nb_sain_pro from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'PRO' ;
+			quit ;%end;
+
+			proc sql ;
+				create table temp_sain_corp as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'CORP' and top_dft_auto_pro_corp=0 ;
+				create table temp_def_corp as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'CORP' and top_dft_auto_pro_corp=1 ;
+			quit ;
+				proc surveyselect data=temp_sain_corp out=temp_ech_sain_corp seed=1000 sampsize=&nb_sain_corp. ; run;
+				proc surveyselect data=temp_def_corp out=temp_ech_def_corp seed=1000 sampsize=&nb_def_corp. ; run;
+			data &sortie. ; set temp_ech_sain_corp temp_ech_def_corp ; run;
+			%if &ptf.='PRO-CORP' %then %do ;
+			proc sql ;
+				create table temp_sain_pro as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'PRO' and top_dft_auto_pro_corp=0 ;
+				create table temp_def_pro as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'PRO' and top_dft_auto_pro_corp=1 ;
+			quit ;
+				proc surveyselect data=temp_sain_pro out=temp_ech_sain_pro seed=1000 sampsize=&nb_sain_pro. ; run;
+				proc surveyselect data=temp_def_pro out=temp_ech_def_pro seed=1000 sampsize=&nb_def_pro. ; run;
+			data &sortie. ; set temp_ech_sain_pro temp_ech_def_pro &sortie. ; run ; %end ;
+
+%do j=2 %to &nb_coh. ;	
+	%let cohorte=%scan(&cohortes,&j) ;
+			proc sql noprint;select nb_def into : nb_def_corp from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'CORP' ;
+				select nb_sain into : nb_sain_corp from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'CORP' ;
+			quit ;
+			%if &ptf.='PRO-CORP' %then %do ;
+			proc sql noprint;select nb_def into : nb_def_pro from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'PRO' ;
+				select nb_sain into : nb_sain_pro from &echantillon. where cohorte=&cohorte. and PRO_CORP = 'PRO' ;
+			quit ;%end;
+
+			proc sql ;
+					create table temp_sain_corp as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'CORP' and top_dft_auto_pro_corp=0 and SIREN not in
+				(select SIREN from &sortie.) ;
+					create table temp_def_corp as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'CORP' and top_dft_auto_pro_corp=1 and SIREN not in
+				(select SIREN from &sortie.) ;
+				quit ;
+				proc surveyselect data=temp_sain_corp out=temp_ech_sain_corp seed=1000 sampsize=&nb_sain_corp. ; run;
+				proc surveyselect data=temp_def_corp out=temp_ech_def_corp seed=1000 sampsize=&nb_def_corp. ; run;
+			data &sortie. ; set temp_ech_sain_corp temp_ech_def_corp &sortie. ; run;
+			%if &ptf.='PRO-CORP' %then %do ;
+			proc sql ;
+				create table temp_sain_pro as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'PRO' and top_dft_auto_pro_corp=0 and SIREN not in
+				(select SIREN from &sortie.) ;
+					create table temp_def_pro as select * from &entree. where cohorte=&cohorte. and PRO_CORP = 'PRO' and top_dft_auto_pro_corp=1 and SIREN not in
+				(select SIREN from &sortie.) ;
+				quit ;
+				proc surveyselect data=temp_sain_pro out=temp_ech_sain_pro seed=1000 sampsize=&nb_sain_pro. ; run;
+				proc surveyselect data=temp_def_pro out=temp_ech_def_pro seed=1000 sampsize=&nb_def_pro. ; run;
+			data &sortie. ; set temp_ech_sain_pro temp_ech_def_pro &sortie. ; run;%end;
+%end ;
+proc delete data=temp_ech_sain_corp temp_ech_def_corp temp_sain_corp temp_def_corp effectif def ; run ;
+%if &ptf.='PRO-CORP' %then %do ; proc delete data=temp_ech_sain_pro temp_ech_def_pro temp_sain_pro temp_def_pro ; run ;%end;
+%mend;
+endrsubmit ;
+
+/*Construction à partir de la base du dossier modélisation */
+proc sql; 
+create table cas_def as select SIREN
+from MOD.BASE_CORP_PRO_MOD 
+where top_dft_auto_pro_corp=1 ;
+quit ;
+
